@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vulnerability Scanner</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">VulnScanner</a>
+  </div>
+</nav>
+<div class="container my-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</div>
+
+ <!-- Loading Overlay -->
+ <div id="loadingOverlay" class="loading-overlay d-none">
+   <div class="loading-box text-center">
+     <div class="spinner-border text-light" role="status">
+       <span class="visually-hidden">Loading...</span>
+     </div>
+     <div class="mt-3 text-light">Running scan, please wait...</div>
+   </div>
+ </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Show loading overlay on any form submit
+  (function() {
+    const overlay = document.getElementById('loadingOverlay');
+    document.addEventListener('submit', function(e) {
+      if (overlay) {
+        overlay.classList.remove('d-none');
+      }
+      // Disable all submit buttons to prevent double submits
+      document.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(btn => {
+        btn.setAttribute('disabled', 'disabled');
+      });
+    }, true);
+  })();
+</script>
+</body>
+</html>

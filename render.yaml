@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: vuln-scanner
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers=2 --threads=4 --timeout=120
+    autoDeploy: true
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: URLSCAN_API_KEY
+        value: ""
+      - key: SHODAN_API_KEY
+        value: ""
+      - key: ZAP_API_KEY
+        value: ""
+      - key: ZAP_ADDRESS
+        value: "127.0.0.1"
+      - key: ZAP_PORT
+        value: "8090"
+      - key: NMAP_PATH
+        value: ""

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-8 mx-auto">
+    <div class="card">
+      <div class="card-header">Start a Scan</div>
+      <div class="card-body">
+        <form action="{{ url_for('scan') }}" method="post">
+          <div class="mb-3">
+            <label for="target" class="form-label">Target (IP/Hostname or URL)</label>
+            <input type="text" class="form-control" id="target" name="target" placeholder="example.com or http://example.com" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="scan_nmap" name="scan_nmap" checked>
+                <label class="form-check-label" for="scan_nmap">Nmap scan</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="scan_ports" name="scan_ports" checked>
+                <label class="form-check-label" for="scan_ports">TCP port scan (common ports)</label>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="scan_web" name="scan_web" checked>
+                <label class="form-check-label" for="scan_web">Basic web scan (headers, sensitive files)</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="scan_zap" name="scan_zap">
+                <label class="form-check-label" for="scan_zap">OWASP ZAP (requires running daemon)</label>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="scan_cloud" name="scan_cloud">
+                <label class="form-check-label" for="scan_cloud">Cloud Scan (Mozilla Observatory + SSL Labs + crt.sh) — No install needed</label>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 d-grid">
+            <button type="submit" class="btn btn-primary">Run Scan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

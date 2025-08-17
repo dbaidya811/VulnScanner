@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-10 mx-auto">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Scan Results</h3>
+      <a class="btn btn-outline-secondary" href="/">New Scan</a>
+    </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <div><strong>Target:</strong> {{ results.target }}</div>
+      </div>
+    </div>
+
+    {% for scan in results.scans %}
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>{{ scan.name }}</span>
+        {% if scan.success %}
+          <span class="badge text-bg-success">OK</span>
+        {% else %}
+          <span class="badge text-bg-danger">Error</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if not scan.success %}
+          <pre class="mb-0">{{ scan.error }}</pre>
+        {% else %}
+          {% if scan.name == 'Nmap' %}
+            {% if scan.data.skipped %}
+              <div class="text-white">{{ scan.data.reason or 'Nmap scan skipped.' }}</div>
+            {% elif scan.data.raw_output %}
+              <pre class="small">{{ scan.data.raw_output }}</pre>
+            {% else %}
+              {% for host in scan.data.hosts %}
+                <h6 class="mt-2">Host: {{ host.host }} ({{ host.state }})</h6>
+                {% for proto, ports in host.protocols.items() %}
+                  <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                      <thead><tr><th>Proto</th><th>Port</th><th>State</th><th>Name</th><th>Product</th><th>Version</th><th>Info</th></tr></thead>
+                      <tbody>
+                      {% for p in ports %}
+                        <tr>
+                          <td>{{ proto }}</td>
+                          <td>{{ p.port }}</td>
+                          <td>{{ p.state }}</td>
+                          <td>{{ p.name }}</td>
+                          <td>{{ p.product }}</td>
+                          <td>{{ p.version }}</td>
+                          <td>{{ p.extrainfo }}</td>
+                        </tr>
+                      {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                {% endfor %}
+              {% endfor %}
+            {% endif %}
+          {% elif scan.name == 'TCP Port Scan' %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped">
+                <thead><tr><th>Port</th><th>Service</th></tr></thead>
+                <tbody>
+                {% for p in scan.data.open_ports %}
+                  <tr><td>{{ p.port }}</td><td>{{ p.service }}</td></tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% elif scan.name == 'Basic Web Scan' %}
+            <div class="mb-2"><strong>Start URL:</strong> {{ scan.data.start_url }}</div>
+            {% if scan.data.homepage_status %}
+              <div class="mb-3"><strong>Homepage status:</strong> {{ scan.data.homepage_status }} (<code>{{ scan.data.final_url }}</code>)</div>
+            {% endif %}
+            <h6>Pages</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-striped">
+                <thead><tr><th>URL</th><th>Status</th><th>Missing Security Headers</th></tr></thead>
+                <tbody>
+                {% for page in scan.data.pages %}
+                  <tr>
+                    <td style="max-width:500px; word-break:break-all;">{{ page.url }}</td>
+                    <td>{% if page.status %}{{ page.status }}{% else %}-{% endif %}</td>
+                    <td>
+                      {% if page.security_headers %}
+                        {% if page.security_headers.missing %}
+                          <span class="badge text-bg-warning">{{ page.security_headers.missing|join(', ') }}</span>
+                        {% else %}
+                          <span class="badge text-bg-success">All present</span>
+                        {% endif %}
+                      {% else %}
+                        {% if page.error %}<span class="text-danger">{{ page.error }}</span>{% endif %}
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <h6>Sensitive Files</h6>
+            {% if scan.data.sensitive_files and scan.data.sensitive_files|length > 0 %}
+              <ul>
+                {% for f in scan.data.sensitive_files %}
+                  <li><code>{{ f.url }}</code> ({{ f.status }})</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="text-muted">None discovered</div>
+            {% endif %}
+          {% elif scan.name == 'Cloud Scan' %}
+            {% set cloud = scan.data %}
+            <div class="mb-3">
+              <strong>Host:</strong> {{ cloud.host }}
+            </div>
+            <div class="row g-3">
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">Mozilla Observatory</div>
+                  <div class="card-body">
+                    {% if cloud.mozilla_observatory.error %}
+                      <div class="text-danger">{{ cloud.mozilla_observatory.error }}</div>
+                    {% else %}
+                      <div>Grade: <strong>{{ cloud.mozilla_observatory.grade or 'N/A' }}</strong></div>
+                      <div>Score: <strong>{{ cloud.mozilla_observatory.score or 'N/A' }}</strong></div>
+                      {% if cloud.mozilla_observatory.source %}
+                        <div class="mt-2"><span class="badge bg-secondary">Source: {{ cloud.mozilla_observatory.source }}</span></div>
+                      {% endif %}
+                      <div class="text-muted small mt-2">Passed: {{ cloud.mozilla_observatory.tests_passed }} | Failed: {{ cloud.mozilla_observatory.tests_failed }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">SSL Labs</div>
+                  <div class="card-body">
+                    {% if cloud.ssl_labs.error %}
+                      <div class="text-danger">{{ cloud.ssl_labs.error }}</div>
+                    {% else %}
+                      <div>Status: <strong>{{ cloud.ssl_labs.status or 'N/A' }}</strong></div>
+                      {% if cloud.ssl_labs.endpoints %}
+                      <div class="table-responsive mt-2">
+                        <table class="table table-sm table-striped">
+                          <thead><tr><th>IP</th><th>Grade</th><th>Status</th><th>ServerName</th></tr></thead>
+                          <tbody>
+                          {% for ep in cloud.ssl_labs.endpoints %}
+                            <tr>
+                              <td>{{ ep.ipAddress }}</td>
+                              <td>{{ ep.grade }}</td>
+                              <td>{{ ep.statusMessage }}</td>
+                              <td>{{ ep.serverName }}</td>
+                            </tr>
+                          {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">crt.sh (Certificates/Subdomains)</div>
+                  <div class="card-body">
+                    {% if cloud.crtsh.error %}
+                      <div class="text-danger">{{ cloud.crtsh.error }}</div>
+                    {% else %}
+                      <div>Found: <strong>{{ cloud.crtsh.count }}</strong></div>
+                      {% if cloud.crtsh.names %}
+                        <ul class="small mt-2" style="max-height: 200px; overflow:auto;">
+                          {% for n in cloud.crtsh.names %}
+                            <li><code>{{ n }}</code></li>
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 mt-1">
+              <div class="col-lg-6">
+                <div class="card">
+                  <div class="card-header">urlscan.io</div>
+                  <div class="card-body">
+                    {% if cloud.urlscan.error %}
+                      <div class="text-danger">{{ cloud.urlscan.error }}</div>
+                    {% elif cloud.urlscan.skipped %}
+                      <div class="text-muted">{{ cloud.urlscan.reason }}</div>
+                    {% else %}
+                      <div>URL: <code>{{ cloud.urlscan.url }}</code></div>
+                      <div>IP: {{ cloud.urlscan.ip }} | Server: {{ cloud.urlscan.server }} | Country: {{ cloud.urlscan.country }}</div>
+                      {% if cloud.urlscan.domains %}
+                        <div class="small mt-2"><strong>Domains</strong></div>
+                        <ul class="small" style="max-height:160px; overflow:auto;">
+                          {% for d in cloud.urlscan.domains %}
+                            <li><code>{{ d }}</code></li>
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="card">
+                  <div class="card-header">Shodan</div>
+                  <div class="card-body">
+                    {% if cloud.shodan.error %}
+                      <div class="text-danger">{{ cloud.shodan.error }}</div>
+                    {% elif cloud.shodan.skipped %}
+                      <div class="text-muted">{{ cloud.shodan.reason }}</div>
+                    {% else %}
+                      <div>IP: {{ cloud.shodan.ip }} | Org: {{ cloud.shodan.org }} | ISP: {{ cloud.shodan.isp }}</div>
+                      {% if cloud.shodan.source %}
+                        <div class="mt-2"><span class="badge bg-secondary">Source: {{ cloud.shodan.source }}</span></div>
+                      {% endif %}
+                      {% if cloud.shodan.ports %}
+                        <div class="small mt-2"><strong>Ports</strong>: {{ cloud.shodan.ports|join(', ') }}</div>
+                      {% endif %}
+                      {% if cloud.shodan.vulns %}
+                        <div class="small mt-2"><strong>Vulns</strong> (CVE): {{ cloud.shodan.vulns|join(', ') }}</div>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% elif scan.name == 'OWASP ZAP' %}
+            <h6>Passive Alerts (Top 20)</h6>
+            {% set alerts = scan.data.passive_alerts or [] %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped">
+                <thead><tr><th>Risk</th><th>Alert</th><th>URL</th></tr></thead>
+                <tbody>
+                {% for a in alerts[:20] %}
+                  <tr>
+                    <td>{{ a.risk }}</td>
+                    <td>{{ a.alert }}</td>
+                    <td style="max-width:500px; word-break:break-all;">{{ a.url }}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% if scan.data.active_scan %}
+              <h6 class="mt-3">Active Scan Summary</h6>
+              <div>Scan ID: {{ scan.data.active_scan.scan_id }} | Status: {{ scan.data.active_scan.status }}%</div>
+            {% endif %}
+          {% else %}
+            <pre class="small">{{ scan.data | tojson(indent=2) }}</pre>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

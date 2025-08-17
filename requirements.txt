@@ -1,0 +1,10 @@
+Flask==3.0.3
+requests==2.32.3
+beautifulsoup4==4.12.3
+python-nmap==0.7.1
+python-owasp-zap-v2.4==0.0.21
+Werkzeug==3.0.3
+itsdangerous==2.2.0
+Jinja2==3.1.4
+python-dotenv==1.0.1
+gunicorn==21.2.0
